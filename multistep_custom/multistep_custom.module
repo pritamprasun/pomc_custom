@@ -1,0 +1,77 @@
+<?php
+  // Addind js
+drupal_add_js(drupal_get_path('module', 'multistep_custom') .'/multistep_custom.js');
+function multistep_custom_form_alter(&$form, &$form_state, $form_id) {
+    dsm($form_state);
+}
+function multistep_custom_form_form_reg_user_alter(&$form, &$form_state, $form_id) {
+  /*
+  $types = db_select('profile_type', 'p')
+    ->fields('p')
+    ->execute()
+    ->fetchAllAssoc('type');
+  */
+  $user_type = arg(1);
+  if ($user_type == 'employer'){
+    $form_state['profiles']['employer'] = profile2_create(array('type' => 'employer'));
+    profile2_attach_form($form, $form_state);
+    unset($form['profile_designer']);
+    if(isset($form_state['page_values'])){
+   $form['profile_employer']['field_name']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_name']['und'][0]['value'];
+   $form['profile_employer']['field_dob']['und'][0]['#default_value']['value'] = $form_state['page_values'][1]['profile_employer']['field_dob']['und'][0]['value'];
+   $form['profile_employer']['field_gender']['und']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_gender']['und'][0]['value'];
+   $form['profile_employer']['field_address']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_address']['und'][0]['value'];
+   $form['profile_employer']['field_city']['und']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_city']['und'][0]['name'];
+   $form['profile_employer']['field_location']['und'][0]['#default_value']['province'] = $form_state['page_values'][1]['profile_employer']['field_location']['und'][0]['province'];
+   $form['profile_employer']['field_location']['und'][0]['#default_value']['country'] = $form_state['page_values'][1]['profile_employer']['field_location']['und'][0]['country'];
+   $form['profile_employer']['field_contact_no']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_contact_no']['und'][0]['value'];
+   }
+
+ }
+ 
+ if ($user_type == 'designer'){
+   $form_state['profiles']['designer'] = profile2_create(array('type' => 'designer'));
+   profile2_attach_form($form, $form_state);
+   unset($form['profile_employer']);
+   //Setting the value of designer code
+   $form['profile_designer']['field_designer_code']['#type'] = 'hidden';
+   if (!variable_get('designer_code')) {
+     variable_set('designer_code', 1000);
+   }
+   $form['profile_designer']['field_designer_code']['und'][0]['value']['#default_value'] = variable_get('designer_code');
+   if(isset($form_state['page_values'])){
+     $form['profile_designer']['field_name']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_name']['und'][0]['value'];
+     $form['profile_designer']['field_dob']['und'][0]['#default_value']['value'] = $form_state['page_values'][1]['profile_designer']['field_dob']['und'][0]['value'];
+     $form['profile_designer']['field_gender']['und']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_gender']['und'][0]['value'];
+     $form['profile_designer']['field_address']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_address']['und'][0]['value'];
+     $form['profile_designer']['field_city']['und']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_city']['und'][0]['name'];
+     $form['profile_designer']['field_location']['und'][0]['#default_value']['province'] = $form_state['page_values'][1]['profile_designer']['field_location']['und'][0]['province'];
+     $form['profile_designer']['field_location']['und'][0]['#default_value']['country'] = $form_state['page_values'][1]['profile_designer']['field_location']['und'][0]['country'];
+     $form['profile_designer']['field_contact_no']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_contact_no']['und'][0]['value'];
+     /*
+     $form['profile_designer']['field_school']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_school']['und'][0]['value'];
+     $form['profile_designer']['field_major']['und']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_major']['und'][0]['name'];
+     $form['profile_designer']['field_certificate']['und']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_certificate']['und'][0]['name'];
+    */
+     //Setting default value for Prefered Working location
+     $form['profile_designer']['field_prefered_working_location_']['und']['term_entry']['#default_value'] = get_default_values($form_state['page_values'][1]['profile_designer']['field_prefered_working_location_']) ;
+     //Setting default value for Prefered Specialization 
+     $form['profile_designer']['field_specialization_']['und']['term_entry']['#default_value'] = get_default_values($form_state['page_values'][1]['profile_designer']['field_specialization_']);
+     $form['profile_designer']['field_working_experience']['und'][0]['#default_value']['value'] = $form_state['page_values'][1]['profile_designer']['field_working_experience']['und'][0]['value'];
+     $form['profile_designer']['field_availability']['und']['#default_value'] = $form_state['page_values'][1]['profile_designer']['field_availability']['und'][0]['value'];
+   }
+ }
+ if($form_state['page_num'] != 1){
+   $profile_field = 'profile_' . $user_type;
+   unset($form[$profile_field]); 
+ }
+ //dsm($form);
+ dsm($form_state);
+}
+function get_default_values($field) {
+  $default_value = '';
+  foreach ($field['und'] as $value) {
+    $default_value = $default_value . $value['name'] . ',';
+  }
+  return $default_value;
+}

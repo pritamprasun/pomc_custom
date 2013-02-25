@@ -1,0 +1,44 @@
+<?php
+function multistep_custom_form_alter(&$form, &$form_state, $form_id) {
+  //dsm($form);
+}
+function multistep_custom_form_form_reg_user_alter(&$form, &$form_state, $form_id) {
+  /*
+  $types = db_select('profile_type', 'p')
+    ->fields('p')
+    ->execute()
+    ->fetchAllAssoc('type');
+  */
+  $user_type = arg(1);
+  if ($user_type == 'employer'){
+   $form_state['profiles']['employer'] = profile2_create(array('type' => 'employer'));
+   profile2_attach_form($form, $form_state);
+   //unset($form['profile_designer']);
+   //Setting default value for profile field
+   if($form_state['page_values']){
+   $form['profile_employer']['field_name']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_name']['und'][0]['value'];
+   $form['profile_employer']['field_dob']['und'][0]['#default_value']['value'] = $form_state['page_values'][1]['profile_employer']['field_dob']['und'][0]['value'];
+   $form['profile_employer']['field_gender']['und']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_gender']['und'][0]['value'];
+   $form['profile_employer']['field_address']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_address']['und'][0]['value'];
+   $form['profile_employer']['field_city']['und']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_city']['und'][0]['name'];
+   $form['profile_employer']['field_location']['und'][0]['#default_value']['province'] = $form_state['page_values'][1]['profile_employer']['field_location']['und'][0]['province'];
+   $form['profile_employer']['field_location']['und'][0]['#default_value']['country'] = $form_state['page_values'][1]['profile_employer']['field_location']['und'][0]['country'];
+   $form['profile_employer']['field_contact_no']['und'][0]['value']['#default_value'] = $form_state['page_values'][1]['profile_employer']['field_contact_no']['und'][0]['value'];
+ }
+  } 
+ if ($user_type == 'designer'){
+   $form_state['profiles']['designer'] = profile2_create(array('type' => 'designer'));
+   profile2_attach_form($form, $form_state);
+   unset($form['profile_employer']);
+   //Setting default value for profile field                                                                                                 
+ }
+ 
+ if($form_state['page_num'] != 1){
+   $profile_field = 'profile_' . $user_type;
+   hide($form[$profile_field]);
+   dsm($form); 
+ }
+ 
+  dsm($form);
+ dsm($form_state);
+}

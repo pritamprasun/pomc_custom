@@ -1,0 +1,34 @@
+<?php
+/**
+* @file
+* multistep registration functionality
+*/
+
+/**
+* Implementation of hook_menu()
+*/
+
+function multistep_registration_menu() {
+  $items = array();
+  $items['register/employer'] = array(
+    'title' => 'Employer Registration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('form_reg_user'),
+    'access callback' => TRUE,
+    'description' => 'menu desc',
+    'file' => 'multistep_registration_form.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['register/designer'] = array(
+    'title' => 'Designer Registration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('form_reg_user'),
+    'access callback' => TRUE,
+    'description' => 'menu desc',
+    'file' => 'multistep_registration_form.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+
+  return $items;
+}

@@ -1,0 +1,313 @@
+<?php
+/**
+* @file
+* contains Multistep form
+*/
+function form_reg_user($form, &$form_state) {
+  // Display page 3 if $form_state['page_num'] == 3
+  if (!empty($form_state['page_num']) && $form_state['page_num'] == 3) {
+    return multistep_registration_page_three($form, $form_state);
+  }
+  // Display page 2 if $form_state['page_num'] == 2
+  if (!empty($form_state['page_num']) && $form_state['page_num'] == 2) {
+    return multistep_registration_page_two($form, $form_state);
+  }
+
+  // Otherwise we build page 1.
+  $form_state['page_num'] = 1;
+  $form['description'] = array(
+    '#type' => 'item',
+    '#title' => t(''),
+  );
+  // Account information.
+  $form['account'] = array(
+    '#type'   => 'container',
+    '#weight' => -10,
+  );
+  $form['account']['mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('E-mail address'),
+    '#maxlength' => EMAIL_MAX_LENGTH,
+    '#description' => t('A valid e-mail address. All e-mails from the system will be sent to this address. The e-mail address is not made public and will only be used if you wish to receive a new password or wish to receive certain news or notifications by e-mail.'),
+    '#required' => TRUE,
+    '#default_value' => !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '',
+  );
+  $form['account']['re_mail'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Confirm e-mail address'),
+    '#maxlength' => EMAIL_MAX_LENGTH,
+    '#description' => t('Please re-type your e-mail address to confirm it is accurate.'),
+    '#required' => TRUE,
+    '#default_value' => !empty($form_state['values']['mail']) ? $form_state['values']['mail'] : '',
+  );
+  $form['next_1'] = array(
+    '#type' => 'submit',
+    '#value' => 'Next >>',
+    '#submit' => array('form_reg_user_next_1_submit'),
+    '#validate' => array('form_reg_user_next_1_validate'),
+    '#weight' => 100,
+  );
+  return $form;
+}
+
+/**
+ * Returns the form for the second step.
+ */
+function multistep_registration_page_two($form, &$form_state) {
+  $form['description'] = array(
+    '#type' => 'item',
+    '#title' => t('A basic multistep form (page 2)'),
+  );
+
+  $form['color'] =  array(
+    '#type' => 'radios',
+    '#title' => t('Avilable Options'),
+    '#default_value' => NULL,
+    '#options' => array(0 => t('Option 1'), 1 => t('Option 2')),
+    '#description' => t('desc will go here'),
+    );
+    //'#default_value' => !empty($form_state['values']['color']) ? $form_state['values']['color'] : '',
+  
+  $form['back'] = array(
+    '#type' => 'submit',
+    '#value' => t('<< Back'),
+    '#submit' => array('form_reg_user_page_2_back'),
+    '#limit_validation_errors' => array(),
+    '#weight' => 100,
+  );
+  $form['next_2'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+    '#submit' => array('form_reg_user_next_2_submit'),
+    '#weight' => 100,
+  );
+  return $form;
+}
+/**
+* Returns the third page (preview)
+*/
+function multistep_registration_page_three($form, &$form_state) {
+  //return 'this is preview of the form';
+  $form['contact_information'] = array(
+    '#markup' => '<b>Account Preview:</b><br \><b>Name :</b>' . $form_state['page_values'][1]['name'] . '<br \>',
+  );
+  $form['back'] = array(
+    '#type' => 'submit',
+    '#value' => t('<< Back'),
+    '#submit' => array('form_reg_user_page_3_back'),
+    // We won't bother validating the required 'color' field, since they
+    // have to come back to this page to submit anyway.
+    '#limit_validation_errors' => array(),
+    '#weight' => 100,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Confirm'),
+    '#submit' => array('form_reg_user_submit_3_submit'),
+    '#weight' => 100,
+  );
+  //dsm($form);
+  //dsm($form_state);
+  return $form;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Next Button handler
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * Validate handler for the next button on first page.
+ */
+function form_reg_user_next_1_validate($form, &$form_state) {
+  //dsm($form_state);
+  /*  if (isset($form_state['values']['name'])) {
+    if ($error = user_validate_name($form_state['values']['name'])) {
+      form_set_error('name', $error);
+    }
+    elseif ((bool) db_select('users')->fields('users', array('uid'))->condition('name', db_like($form_state['values']['name']), 'LIKE')->range(0, 1)->execute()->fetchField()) {
+      form_set_error('name', t('The name %name is already taken.', array('%name' => $form_state['values']['name'])));
+    }
+    }*/
+  if (trim($form_state['values']['mail']) != trim($form_state['values']['re_mail'])) {
+    form_set_error('re_mail', t('The e-mail addresses are not same.'));
+    }
+     
+  // Trim whitespace from mail, to prevent confusing 'e-mail not valid'
+  // warnings often caused by cutting and pasting.
+
+  $mail = trim($form_state['values']['mail']);
+  form_set_value($form['account']['mail'], $mail, $form_state);
+
+  // Validate the e-mail address, and check if it is taken by an existing user.
+  if ($error = user_validate_mail($form_state['values']['mail'])) {
+    form_set_error('mail', $error);
+  }
+  elseif ((bool) db_select('users')->fields('users', array('uid'))->condition('mail', db_like($form_state['values']['mail']), 'LIKE')->range(0, 1)->execute()->fetchField()) {
+    // Format error message dependent on whether the user is logged in or not.
+    if ($GLOBALS['user']->uid) {
+      form_set_error('mail', t('The e-mail address %email is already taken.', array('%email' => $form_state['values']['mail'])));
+    }
+    else {
+      form_set_error('mail', t('The e-mail address %email is already registered. <a href="@password">Have you forgotten your password?</a>', array('%email' => $form_state['values']['mail'], '@password' => url('user/password'))));
+    }
+  }
+}
+/**
+ * Submit handler for first_step() next button.
+ *
+ * Capture the values from page one and store them away so they can be used
+ * at final submit time.
+ */
+function form_reg_user_next_1_submit($form, &$form_state) {
+
+  // Values are saved for each page.
+  // to carry forward to subsequent pages in the form.
+  // and we tell FAPI to rebuild the form.
+  // Default implementation of name generation.                                                                                              
+  $new_name = preg_replace('/@.*$/', '', $form_state['values']['mail']);
+  // Remove unwanted characters.                                                                                                             
+  $new_name = preg_replace('/[^a-zA-Z0-9.-]/', '', $new_name);
+  $num = 1;
+  // if username generated from email record already exists, append underscore and number eg:(chris_123)                                     
+  while((bool) db_select('users')->fields('users', array('uid'))->condition('name', db_like($new_name), 'LIKE')->range(0, 1)->execute()->fetchField()){
+    $new_name = $new_name . '_' . $num;
+    $num++;
+  }
+  $form_state['values']['name'] = $new_name;
+
+  $form_state['page_values'][1] = $form_state['values'];
+
+  if (!empty($form_state['page_values'][2])) {
+    $form_state['values'] = $form_state['page_values'][2];
+  }
+
+  // When form rebuilds, it will look at this to figure which page to build.
+  $form_state['page_num'] = 2;
+  $form_state['rebuild'] = TRUE;
+}
+/**
+* The page 2 submit handler.
+*/
+function form_reg_user_next_2_submit($form, &$form_state) {
+
+  // Values are saved for each page.
+  // to carry forward to subsequent pages in the form.
+  // and we tell FAPI to rebuild the form.
+  $form_state['page_values'][2] = $form_state['values'];
+
+  if (!empty($form_state['page_values'][3])) {
+    $form_state['values'] = $form_state['page_values'][3];
+  }
+
+  // When form rebuilds, it will look at this to figure which page to build.
+  $form_state['page_num'] = 3;
+  $form_state['rebuild'] = TRUE;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Back button handler
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * Back button handler submit handler.
+ *
+ * Since #limit_validation_errors = array() is set, values from page 2
+ * will be discarded. We load the page 1 values instead.
+ */
+function form_reg_user_page_2_back($form, &$form_state) {
+  $form_state['values'] = $form_state['page_values'][1];
+  $form_state['page_num'] = 1;
+  $form_state['rebuild'] = TRUE;
+}
+
+function form_reg_user_page_3_back($form, &$form_state) {
+  $form_state['values'] = $form_state['page_values'][2];
+  $form_state['page_num'] = 2;
+  $form_state['rebuild'] = TRUE;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Submit handler
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * The page 3 submit handler.
+ *
+ * This is the final submit handler. Gather all the data together and output
+ * it in a drupal_set_message().
+ */
+
+function form_reg_user_submit_3_submit($form, &$form_state) {
+  //dsm($form_state);
+  $roles = '';
+    if (arg(1) == 'employer') {
+      $roles = array('5' => 'employer');
+    }
+    elseif (arg(1) == 'designer') {
+      $roles = array('6' => 'designer');
+    }
+  $edit = array(
+    'name' => $form_state['page_values'][1]['name'], 
+    'pass' => user_password(),
+    'mail' => $form_state['page_values'][1]['mail'],
+    'init' => $form_state['page_values'][1]['mail'], 
+    'status' => 1, 
+    'access' => REQUEST_TIME,
+    'roles' => $roles,
+  );
+  $new_user = user_save(drupal_anonymous_user(), $edit);
+  $new_uid = $new_user->uid;
+  //dsm($form_state);
+  //profile2_form_submit_build_profile($form, $form_state);
+  // clean form values.
+  profile2_form_submit_cleanup($form, $form_state);
+  $profile = profile2_create(array('type' => arg(1), 'uid' => $new_user->uid));
+  profile2_save($profile);
+  $profile_detail = get_profile_detail($new_uid);
+  $user_profile_type = 'profile_' . arg(1);
+  save_profile_detail($profile_detail['pid'], $form_state['page_values'][1][$user_profile_type]);
+
+// }
+/*
+  // Normally, some code would go here to alter the database with the data
+  // collected from the form. Instead sets a message with drupal_set_message()
+  // to validate that the code worked.
+  $page_one_values = $form_state['page_values'][1];
+  drupal_set_message(t('The form has been submitted. name="@first @last", year of birth=@year_of_birth',
+  array('@first' => $page_one_values['first'], '@last' => $page_one_values['last'], '@year_of_birth' => $page_one_values['year_of_birth'])));
+
+  if (!empty($page_one_values['first2'])) {
+    drupal_set_message(t('Second name: name="@first @last", year of birth=@year_of_birth',
+    array('@first' => $page_one_values['first2'], '@last' => $page_one_values['last2'], '@year_of_birth' => $page_one_values['year_of_birth2'])));
+  }
+  drupal_set_message(t('And the favorite color is @color', array('@color' => $form_state['values']['color'])));
+
+  // If we wanted to redirect on submission, set $form_state['redirect']
+  // $form_state['redirect'] = 'node'; // Redirects the user to /node.
+*/
+}
+function get_profile_detail($new_uid){
+  return db_select('profile', 'p')
+      ->fields('p')
+      ->condition('uid', $new_uid)
+      ->execute()
+      ->fetchAssoc();
+}
+
+// Saving the profile field values.
+
+function save_profile_detail($pid, $profile_fields){
+  foreach($profile_fields as $name => $p_field){
+    $tablename = 'field_data_' . $name;
+    $value_column_name = $name . '_value';
+    db_insert($tablename)
+      ->fields(array(
+        'entity_type' => 'profile2',
+        'bundle' => arg(1),
+        'entity_id' => $pid,
+        'revision_id' => $pid,
+        'language' => 'und',
+        'delta' => 0,
+        $value_column_name => $p_field['und'][0]['value'],
+    ))
+    ->execute();
+  }
+}

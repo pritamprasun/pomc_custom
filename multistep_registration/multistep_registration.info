@@ -1,0 +1,4 @@
+name = Multistep Registration
+description = Enables Multistep registration and customization
+package = Jobs Kyoorius
+core = 7.x
